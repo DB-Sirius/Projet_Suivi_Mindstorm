@@ -1,3 +1,7 @@
+"""
+PROGRAMME À EXECUTER SUR ROBOT, QUI SCANNE L'ENVIRONNEMENT ET RENVOIE LES DONNÉES EN TXT
+"""
+
 import os      # to set font
 import time    # to use sleep()
 import socket  # to get host name
