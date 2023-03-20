@@ -40,7 +40,8 @@ def main(noisy = True):
     nbCases = 360/step
 
     #Vitesse de rotation
-    steer = 10
+    steer = 100 #Un steer de 100 semble correspondre à une rotation sur soit-même
+    speed = 10
 
     tabloDistance = []
     print_display(display,  'Début scan')
