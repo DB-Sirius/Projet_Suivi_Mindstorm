@@ -1,6 +1,4 @@
-"""
-PROGRAMME À EXECUTER SUR ROBOT, QUI SCANNE L'ENVIRONNEMENT ET RENVOIE LES DONNÉES EN TXT
-"""
+#!/usr/bin/env python3
 
 import os      # to set font
 import time    # to use sleep()
@@ -23,49 +21,60 @@ def print_display(display, text):
     display.text_grid(text, True, 0, 10) # clear screen, 11th row / 22
     display.update()
 
+def tournerDroite(angle, gyro, steer_motors):
+    values_gyro_init = gyro.angle_and_rate
+    values_gyro_actual = gyro.angle_and_rate
+    while(values_gyro_actual[0] < values_gyro_init[0] + angle): #tant qu'on est pas à l'angle de décalage demandé
+        steer_motors.on(-100, 5)
+        time.sleep(0.5)
+        steer_motors.off()
+        values_gyro_actual = gyro.angle_and_rate
+
+    
+
 
 
 def main(noisy = True):
     display = Display()
     us_sensor = UltrasonicSensor()
     steer_motors = MoveSteering(OUTPUT_A, OUTPUT_D)
+    gyro_sensor = GyroSensor()
     os.system('setfont Lat15-TerminusBold14')
     
     #Valeur du pas (en degrés)
     step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
-    if(360//step != 0):
+    if(False): #se démerder pour avoir une condidiopn qui marche
         print_display(display,  'Pas invalide')
         time.sleep(2)
         exit()
-    nbCases = 360/step
+    nbCases = 360/step #convertir en entier
 
-    #Vitesse de rotation
-    steer = 100 #Un steer de 100 semble correspondre à une rotation sur soit-même
-    speed = 10
+    nbPas = 36
+
+    print_display(display,  'CALIBRATION')
+    gyro_sensor.calibrate()
+    time.sleep(1)
 
     tabloDistance = []
     print_display(display,  'Début scan')
+    time.sleep(2)
     #Boucle principale de scan
-    for i in range(nbCases):
+    for i in range(nbPas): 
         dist = us_sensor.distance_centimeters
         print_display(display,  'Distance: ' + str(dist) )
-
-        tabloDistance[i] = dist
-
-        steer_motors.on(steer, speed) #TODO : comprendre comment ça marche
-        time.sleep(2)
-        steer_motors.off()
-
+        tabloDistance.append(dist)
+        tournerDroite(10, gyro_sensor, steer_motors)
         time.sleep(0.5)
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
-    with open("/home/robot/distanceData.txt", "w") as txt_file:
-        for line in tabloDistance:
-            txt_file.write(" ".join(line) + "\n")
+    f=  open("/home/robot/distanceData.txt", "w")
+    for i in range(nbPas):
+        f.write(str(tabloDistance[i]))
+        f.write('\n')  
 
+    print_display(display,  'Exec terminée')
+    time.sleep(7)
 
-    
-    
 
 
 
