@@ -21,14 +21,21 @@ def print_display(display, text):
     display.text_grid(text, True, 0, 10) # clear screen, 11th row / 22
     display.update()
 
+#fonction qui fait tourner le robot par pas vers la droite de l'angle indiqué
 def tournerDroite(angle, gyro, steer_motors):
     values_gyro_init = gyro.angle_and_rate
     values_gyro_actual = gyro.angle_and_rate
     while(values_gyro_actual[0] < values_gyro_init[0] + angle): #tant qu'on est pas à l'angle de décalage demandé
-        steer_motors.on(-100, 5)
+        #si on a plus de 5 degrés avant d'arriver à l'angle cible, on va vite
+        if(values_gyro_init[0] + angle -values_gyro_actual[0] > 5):
+            steer_motors.on(-100, 5)    
+        else: #sinon, on va lentement pour ne pas dépasser l'angle de peu
+            steer_motors.on(-100, 1)
         time.sleep(0.5)
         steer_motors.off()
         values_gyro_actual = gyro.angle_and_rate
+
+    #TODO : mettre un mécanisme de correction (retour en arriere) si on dépasse l'angle d'un certain seuil (genre 4-5°)
 
     
 
@@ -58,6 +65,7 @@ def main(noisy = True):
     tabloDistance = []
     print_display(display,  'Début scan')
     time.sleep(2)
+
     #Boucle principale de scan
     for i in range(nbPas): 
         dist = us_sensor.distance_centimeters
