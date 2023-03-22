@@ -85,7 +85,7 @@ def main(noisy = True):
     nbPas = 36
 
     print_display(display,  'CALIBRATION')
-    tank.gyro_sensor.calibrate()
+    tank.gyro.calibrate()
     time.sleep(1)
     tabloDistance = []
     tabloDistanceGyro = []
@@ -94,11 +94,11 @@ def main(noisy = True):
 
     #Boucle principale de scan
     for i in range(nbPas):
-        gyroValues = tank.gyro_sensor.angle_and_rate
+        gyroValues = tank.gyro.angle_and_rate
         dist = us_sensor.distance_centimeters
-        print_display(display,  'Distance: ' + str(dist) )
+        print_display(display,'Pas numero : ' + str(i) + "/ Angle :" + str(gyroValues[0]) + "/Distance: " + str(dist) )
         tabloDistance.append(dist)
-        tabloDistanceGyro(gyroValues[0],dist)
+        #tabloDistanceGyro.append(gyroValues[0],dist)
         tank.turn_right(5, 10, brake=True, error_margin=2, sleep_time=0.01)
         time.sleep(0.5)
 
