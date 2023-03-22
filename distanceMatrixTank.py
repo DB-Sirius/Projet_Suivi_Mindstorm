@@ -92,6 +92,10 @@ def main(noisy = True):
     print_display(display,  'Début scan')
     time.sleep(2)
 
+    print_display(display,  'Test Rotation')
+    steer_motors.on_for_degrees(100,10,360)
+    time.sleep(2)
+
     #Boucle principale de scan
     for i in range(nbPas):
         gyroValues = tank.gyro.angle_and_rate
