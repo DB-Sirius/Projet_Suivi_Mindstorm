@@ -99,7 +99,11 @@ def main(noisy = True):
         print_display(display,'Pas numero : ' + str(i) + "/ Angle :" + str(gyroValues[0]) + "/Distance: " + str(dist) )
         tabloDistance.append(dist)
         #tabloDistanceGyro.append(gyroValues[0],dist)
-        tank.turn_right(5, 10, brake=True, error_margin=2, sleep_time=0.01)
+        tank.turn_degrees(
+            speed=SpeedPercent(5),
+            target_angle=10
+        )
+
         time.sleep(0.5)
 
     tank.follow_gyro_angle(
