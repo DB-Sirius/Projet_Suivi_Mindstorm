@@ -93,7 +93,7 @@ def main(noisy = True):
     time.sleep(2)
 
     print_display(display,  'Test Rotation')
-    steer_motors.on_for_seconds(100,15,360)
+    steer_motors.on_for_seconds(100,10,17.1)
     time.sleep(2)
 
     #Boucle principale de scan
