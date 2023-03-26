@@ -88,15 +88,10 @@ def main(noisy = True):
     tank.gyro.calibrate()
     time.sleep(1)
     tabloDistance = []
-    tabloDistanceGyro = []
     print_display(display,  'Début scan')
     time.sleep(2)
 
-    print_display(display,  'Test Rotation')
-    #steer_motors.on_for_seconds(100,10,17.1)
-    time.sleep(2)
-
-    #Boucle principale de scan
+    #Boucle scan 1
     for i in range(nbPas):
         gyroValues = tank.gyro.angle_and_rate
         dist = us_sensor.distance_centimeters
@@ -107,12 +102,31 @@ def main(noisy = True):
 
         time.sleep(0.2)
 
-
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
-    f=  open("/home/robot/distanceData.txt", "w")
+    f=  open("/home/robot/distanceData1.txt", "w")
     for i in range(nbPas):
         f.write(str(tabloDistance[i]))
         f.write('\n')  
+
+
+    tabloDistance2 = []
+    #boucle scan 2
+    for i in range(nbPas):
+        gyroValues = tank.gyro.angle_and_rate
+        dist = us_sensor.distance_centimeters
+        print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
+        tabloDistance2.append(dist)
+        #tabloDistanceGyro.append(gyroValues[0],dist)
+        steer_motors.on_for_seconds(100,20,0.278)
+
+        time.sleep(0.2)
+
+    #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
+    f=  open("/home/robot/distanceData2.txt", "w")
+    for i in range(nbPas):
+        f.write(str(tabloDistance2[i]))
+        f.write('\n')
+    
 
     print_display(display,  'Exec terminée')
     time.sleep(7)
