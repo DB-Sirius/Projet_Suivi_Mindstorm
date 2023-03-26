@@ -41,8 +41,22 @@ def tournerDroite(angle, gyro, steer_motors, display):
 
     #TODO : mettre un mécanisme de correction (retour en arriere) si on dépasse l'angle d'un certain seuil (genre 4-5°)
 
-    
-
+def findTabsDifference(tab1, tab2, errorMarge):
+    differenceTab = []
+    for i in range(0,len(tab1)) :
+        if(errorMarge<1): #Si la valeur fournit est inférieur à 1, on utilise un système de pourcent
+            max = tab2[i]*(1+(errorMarge*0.01))
+            min = tab2[i]*(1-(errorMarge*0.01))
+        else :
+            max = tab2[i]+errorMarge
+            min = tab2[i]-errorMarge
+        print("Max : " + str(max))
+        print("Min : " + str(min))
+        print("Value : " + str(tab1[i]))
+        if((tab1[i]<min)or(tab1[i]>max)):
+            print("Found difference at " + str(i) + "th cell, value1 : " + str(tab1[i]) + " different from value2 : " + str(tab2[i]))
+            differenceTab.append((i,tab1[i],tab2[i]))
+    return differenceTab
 
 
 def main(noisy = True):
@@ -54,7 +68,7 @@ def main(noisy = True):
     
     #Valeur du pas (en degrés)
     step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
-    if(False): #se démerder pour avoir une condidiopn qui marche
+    if(False): #se démerder pour avoir une condition qui marche
         print_display(display,  'Pas invalide')
         time.sleep(2)
         exit()
@@ -66,8 +80,9 @@ def main(noisy = True):
     gyro_sensor.calibrate()
     time.sleep(1)
 
+    ################## SCAN 1 #################
     tabloDistance = []
-    print_display(display,  'Début scan')
+    print_display(display,  'Début scan 1')
     time.sleep(2)
 
     #Boucle principale de scan
@@ -79,7 +94,27 @@ def main(noisy = True):
         time.sleep(0.5)
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
-    f=  open("/home/robot/distanceData.txt", "w")
+    f=  open("/home/robot/distanceData1.txt", "w")
+    for i in range(nbPas):
+        f.write(str(tabloDistance[i]))
+        f.write('\n')  
+
+
+    ################## SCAN 2 #################
+
+    tabloDistance = []
+    print_display(display,  'Début scan 2')
+    time.sleep(2)
+
+    for i in range(nbPas): 
+        dist = us_sensor.distance_centimeters
+        #print_display(display,  'Distance: ' + str(dist) )
+        tabloDistance.append(dist)
+        tournerDroite(10, gyro_sensor, steer_motors, display)
+        time.sleep(0.5)
+
+    #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
+    f=  open("/home/robot/distanceData2.txt", "w")
     for i in range(nbPas):
         f.write(str(tabloDistance[i]))
         f.write('\n')  
@@ -88,6 +123,9 @@ def main(noisy = True):
     time.sleep(7)
 
 
+    '''
+    Mettre ici le code pour qu'il aille dans le bon sens apres avoir vu les différences
+    '''
 
 
 # When this module is called, it starts the main function.

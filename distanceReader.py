@@ -5,47 +5,83 @@ import time
 import sys
 
 print(sys.argv)
-#TODO : importer le tableau de données
-#TODO : importer les arguments suivants au lieu de les coder en dur : le step, et le tableau
-step = 10
-multiplicateur = 1
-tablo = []
 
-f = open('distanceData.txt','r')
+step = 10
+multiplicateur = 0.5
+
+#lecture tableau 1
+tablo1 = []
+f = open('distanceData1.txt','r')
 lines = f.readlines()
 i = 0
 for line in lines:
-    tablo.append(round(float(line))) #convertit en float puis en integer (pour turtle)
+    tablo1.append(round(float(line))) #convertit en float puis en integer (pour turtle)
     i = i+1
+f.close()
 
+#lecture tableau 2
+tablo2 = []
+f = open('distanceData2.txt','r')
+lines = f.readlines()
+i = 0
+for line in lines:
+    tablo2.append(round(float(line))) #convertit en float puis en integer (pour turtle)
+    i = i+1
 f.close()
 
 #grosso modo écrit comme du GCODE
 #initialisation
 turtle.left(90)
 turtle.up()
-currentValue = tablo[0]
+currentValue = tablo1[0]
 turtle.forward(multiplicateur*currentValue) #toutes les valeurs de distance seront multipliées par 5
 turtle.right(90)
 turtle.down()
+turtle.color("green")
 
 #dessin du cercle
-for i in range(len(tablo)):
-    print(tablo[i])
-    if(tablo[i]<currentValue): #correction de la position
+for i in range(len(tablo1)):
+    print(tablo1[i])
+    if(tablo1[i]<currentValue): #correction de la position
         turtle.right(90)
-        turtle.forward(multiplicateur*(currentValue - tablo[i]))
+        turtle.up()
+        turtle.forward(multiplicateur*(currentValue - tablo1[i]))
+        turtle.down()
         turtle.left(90)
-    if(tablo[i]>currentValue): #correction de la position
+    if(tablo1[i]>currentValue): #correction de la position
         turtle.left(90)
-        turtle.forward(multiplicateur*(tablo[i] - currentValue))
+        turtle.up()
+        turtle.forward(multiplicateur*(tablo1[i] - currentValue))
+        turtle.down()
         turtle.right(90)
 
-    currentValue = tablo[i]
+    currentValue = tablo1[i]
     turtle.forward(multiplicateur*2*3.14*currentValue / (360/step)) #approximation de la longueur d'un côté, par 2*pi*R
     turtle.right(step)
-    
 
+turtle.up()
+turtle.goto(0,multiplicateur*tablo2[0])
+turtle.down()
+turtle.color("red")
+currentValue = tablo2[0]
 
+for i in range(len(tablo2)):
+    print(tablo2[i])
+    if(tablo2[i]<currentValue): #correction de la position
+        turtle.right(90)
+        turtle.up()
+        turtle.forward(multiplicateur*(currentValue - tablo2[i]))
+        turtle.down()
+        turtle.left(90)
+    if(tablo2[i]>currentValue): #correction de la position
+        turtle.left(90)
+        turtle.up()
+        turtle.forward(multiplicateur*(tablo2[i] - currentValue))
+        turtle.down()
+        turtle.right(90)
 
-time.sleep(10)
+    currentValue = tablo2[i]
+    turtle.forward(multiplicateur*2*3.14*currentValue / (360/step)) #approximation de la longueur d'un côté, par 2*pi*R
+    turtle.right(step)
+
+time.sleep(30)
