@@ -41,9 +41,19 @@ def tournerDroite(angle, gyro, steer_motors):
 
     #TODO : mettre un mécanisme de correction (retour en arriere) si on dépasse l'angle d'un certain seuil (genre 4-5°)
 
+#Fait avancer le robot d'une distance donné en cm
+def moveDistance(distance,us_sensor,steer_motors,display):
+    moveDuration = 0 * distance #TODO : Mesurer la distance parcouru en fonction de la duré de rotation, utiliser un nombre de révolution pourrait aussi être pertinent
+
+    steer_motors.on_for_seconds(0,20,moveDuration)
+
+#Fait tourner le robot d'une valeur donnée en degré
+def rotateAngle(angle,gyro,steer_motors,display):
+    rotationDuration = ((0.278 * 36)/360)*angle
+    steer_motors.on_for_seconds(100, 20, rotationDuration)
 
 #Fait avancer le robot en direction d'un angle sur une distance donné
-def walkTowardAngle(angle, distance):
+def moveTowardAngle(angle, distance):
     return;
 
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -63,7 +73,32 @@ def findTabsDifference(tab1, tab2, errorMarge):
             differenceTab.append((i,tab1[i],tab2[i]))
     return differenceTab
 
+def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
+    tabloDistance = []
+    rotationDuration = (0.278/36)*nbPas
+    for i in range(nbPas):
+        dist = us_sensor.distance_centimeters
+        print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
+        tabloDistance.append(dist)
+        #tabloDistanceGyro.append(gyroValues[0],dist)
+        steer_motors.on_for_seconds(100,20,rotationDuration)
 
+        time.sleep(0.2)
+    return tabloDistance;
+
+#Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
+def findTabsDifference(tab1, tab2, errorMarge):
+    differenceTab = []
+    for i in range(0,len(tab1)) :
+        if(errorMarge<1): #Si la valeur fournit est inférieur à 1, on utilise un système de pourcent
+            max = tab2[i]*(1+(errorMarge*0.01))
+            min = tab2[i]*(1-(errorMarge*0.01))
+        else :
+            max = tab2[i]+errorMarge
+            min = tab2[i]-errorMarge
+        if((tab1[i]<min)or(tab1[i]>max)):
+            differenceTab.append((i,tab1[i],tab2[i]))
+    return differenceTab
 
 
 def main(noisy = True):
@@ -91,16 +126,17 @@ def main(noisy = True):
     print_display(display,  'Début scan')
     time.sleep(2)
 
-    #Boucle scan 1
-    for i in range(nbPas):
-        gyroValues = tank.gyro.angle_and_rate
-        dist = us_sensor.distance_centimeters
-        print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
-        tabloDistance.append(dist)
-        #tabloDistanceGyro.append(gyroValues[0],dist)
-        steer_motors.on_for_seconds(100,20,0.278)
+    tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
 
-        time.sleep(0.2)
+    #Boucle scan 1
+    #for i in range(nbPas):
+    #    dist = us_sensor.distance_centimeters
+    #    print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
+    #    tabloDistance.append(dist)
+        #tabloDistanceGyro.append(gyroValues[0],dist)
+    #    steer_motors.on_for_seconds(100,20,0.278)
+
+    #    time.sleep(0.2)
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
     f=  open("/home/robot/distanceData1.txt", "w")
@@ -109,17 +145,8 @@ def main(noisy = True):
         f.write('\n')  
 
 
-    tabloDistance2 = []
+    tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
     #boucle scan 2
-    for i in range(nbPas):
-        gyroValues = tank.gyro.angle_and_rate
-        dist = us_sensor.distance_centimeters
-        print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
-        tabloDistance2.append(dist)
-        #tabloDistanceGyro.append(gyroValues[0],dist)
-        steer_motors.on_for_seconds(100,20,0.278)
-
-        time.sleep(0.2)
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
     f=  open("/home/robot/distanceData2.txt", "w")
