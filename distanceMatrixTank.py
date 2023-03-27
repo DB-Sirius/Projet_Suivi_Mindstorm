@@ -43,9 +43,9 @@ def tournerDroite(angle, gyro, steer_motors):
 
 #Fait avancer le robot d'une distance donné en cm
 def moveDistance(distance,us_sensor,steer_motors,display):
-    moveDuration = 0 * distance #TODO : Mesurer la distance parcouru en fonction de la duré de rotation, utiliser un nombre de révolution pourrait aussi être pertinent
+    moveDuration = distance/7.5 #TODO : Mesurer la distance parcouru en fonction de la duré de rotation, utiliser un nombre de révolution pourrait aussi être pertinent
 
-    steer_motors.on_for_seconds(0,20,moveDuration)
+    steer_motors.on_for_seconds(0,-20,moveDuration)
 
 #Fait tourner le robot d'une valeur donnée en degré
 def rotateAngle(angle,gyro,steer_motors,display):
@@ -75,13 +75,14 @@ def findTabsDifference(tab1, tab2, errorMarge):
 
 def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
     tabloDistance = []
-    rotationDuration = (0.278/36)*nbPas
+    rotationDuration = (0.277/36)*nbPas
     for i in range(nbPas):
         dist = us_sensor.distance_centimeters
         print_display(display," Distance: " + str(dist) )
         tabloDistance.append(dist)
         #tabloDistanceGyro.append(gyroValues[0],dist)
         steer_motors.on_for_seconds(100,20,rotationDuration)
+        time.sleep(0.24)
 
     return tabloDistance
 
@@ -90,6 +91,12 @@ def trimTab(tab, max):
         if tab[i]>max :
             tab[i]=max
     return tab
+
+def findTarget(tab1,tab2, errorMarge):
+        differenceTab = findTabsDifference(tab1, tab2, errorMarge)
+        for diff in differenceTab :
+            if((diff[1]-diff[2])>0):
+                return diff
 
 #Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -131,6 +138,11 @@ def main(noisy = True):
     print_display(display,  'Début scan')
     time.sleep(2)
 
+
+
+    #moveDistance(15, us_sensor, steer_motors, display) bouge de 15cm
+
+
     tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
     tabloDistance = trimTab(tabloDistance,155)
 
@@ -149,7 +161,7 @@ def main(noisy = True):
     for i in range(nbPas):
         f.write(str(tabloDistance[i]))
         f.write('\n')  
-
+    f.close()
 
     tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
     tabloDistance2 = trimTab(tabloDistance2,155)
@@ -161,9 +173,26 @@ def main(noisy = True):
     for i in range(nbPas):
         f.write(str(tabloDistance2[i]))
         f.write('\n')
+    f.close()
+
+
+    tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
+    f=  open("/home/robot/tableauDiff.txt", "w")
+    angleCible = 10 * findTarget(tabloDistance,tabloDistance2, 10)
+    f.write("angle: " + str(angleCible))
+    f.write('\n')
+    for i in range(len(tabdiff)):
+        f.write(str("I: " + str(tabdiff[i][0])))
+        f.write(str(" T1 : " + str(tabdiff[i][1])))
+        f.write(str(" T2 :" + str(tabdiff[i][2])))
+
+        f.write('\n')
+    f.close()
+
+    
     
 
-    print_display(display,  'Exec terminée')
+    print_display(display, "angle cible: " + str(angleCible))
     time.sleep(7)
 
 

@@ -7,7 +7,7 @@ import sys
 print(sys.argv)
 
 step = 10
-multiplicateur = 0.5
+multiplicateur = 1
 
 #lecture tableau 1
 tablo1 = []
