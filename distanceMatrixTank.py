@@ -54,7 +54,7 @@ def rotateAngle(angle,gyro,steer_motors,display):
 
 #Fait avancer le robot en direction d'un angle sur une distance donné
 def moveTowardAngle(angle, distance):
-    return;
+    return
 
 def findTabsDifference(tab1, tab2, errorMarge):
     differenceTab = []
@@ -78,13 +78,18 @@ def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
     rotationDuration = (0.278/36)*nbPas
     for i in range(nbPas):
         dist = us_sensor.distance_centimeters
-        print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
+        print_display(display," Distance: " + str(dist) )
         tabloDistance.append(dist)
         #tabloDistanceGyro.append(gyroValues[0],dist)
         steer_motors.on_for_seconds(100,20,rotationDuration)
 
-        time.sleep(0.2)
-    return tabloDistance;
+    return tabloDistance
+
+def trimTab(tab, max):
+    for i in range(0, len(tab)) :
+        if tab[i]>max :
+            tab[i]=max
+    return tab
 
 #Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -127,6 +132,7 @@ def main(noisy = True):
     time.sleep(2)
 
     tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+    tabloDistance = trimTab(tabloDistance,155)
 
     #Boucle scan 1
     #for i in range(nbPas):
@@ -146,6 +152,8 @@ def main(noisy = True):
 
 
     tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+    tabloDistance2 = trimTab(tabloDistance2,155)
+
     #boucle scan 2
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
