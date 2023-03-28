@@ -42,18 +42,28 @@ def tournerDroite(angle, gyro, steer_motors):
     #TODO : mettre un mécanisme de correction (retour en arriere) si on dépasse l'angle d'un certain seuil (genre 4-5°)
 
 #Fait avancer le robot d'une distance donné en cm
-def moveDistance(distance,us_sensor,steer_motors,display):
-    moveDuration = distance/7.5 #TODO : Mesurer la distance parcouru en fonction de la duré de rotation, utiliser un nombre de révolution pourrait aussi être pertinent
-
+def moveDistance(distance,steer_motors,display):
+    moveDuration = distance/7.5
     steer_motors.on_for_seconds(0,-20,moveDuration)
 
 #Fait tourner le robot d'une valeur donnée en degré
+#prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
 def rotateAngle(angle,gyro,steer_motors,display):
-    rotationDuration = ((0.278 * 36)/360)*angle
-    steer_motors.on_for_seconds(100, 20, rotationDuration)
+    if(angle <= 180):
+        rotationDuration = ((0.278 * 36)/360)*angle
+        steer_motors.on_for_seconds(100, 20, rotationDuration)
+    else:
+        rotationDuration = ((0.278 * 36)/360)*(360 - angle)
+        steer_motors.on_for_seconds(-100, 20, rotationDuration)
 
 #Fait avancer le robot en direction d'un angle sur une distance donné
-def moveTowardAngle(angle, distance):
+def moveTowardAngle(angle, distance, gyro, steer_motors, display):
+    #on s'oriente vers l'angle recherché, si possible multiple de 10°
+    while(angle > 360):
+        angle = angle - 360
+    rotateAngle(angle,gyro,steer_motors,display)
+    #On avance
+    moveDistance(distance,steer_motors,display)
     return
 
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -123,14 +133,9 @@ def main(noisy = True):
     
     #Valeur du pas (en degrés)
     step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
-    if(False): #se démerder pour avoir une condidiopn qui marche
-        print_display(display,  'Pas invalide')
-        time.sleep(2)
-        exit()
-    nbCases = 360/step #convertir en entier
-
     nbPas = 36
 
+    #Séquence au démarrage
     print_display(display,  'CALIBRATION')
     tank.gyro.calibrate()
     time.sleep(1)
@@ -138,23 +143,8 @@ def main(noisy = True):
     print_display(display,  'Début scan')
     time.sleep(2)
 
-
-
-    #moveDistance(15, us_sensor, steer_motors, display) bouge de 15cm
-
-
     tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
     tabloDistance = trimTab(tabloDistance,155)
-
-    #Boucle scan 1
-    #for i in range(nbPas):
-    #    dist = us_sensor.distance_centimeters
-    #    print_display(display,'Pas numero : ' + str(i) + "\n Angle :" + str(dist) + "\n Distance: " + str(dist) )
-    #    tabloDistance.append(dist)
-        #tabloDistanceGyro.append(gyroValues[0],dist)
-    #    steer_motors.on_for_seconds(100,20,0.278)
-
-    #    time.sleep(0.2)
 
     #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
     f=  open("/home/robot/distanceData1.txt", "w")
