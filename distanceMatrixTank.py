@@ -102,57 +102,14 @@ def trimTab(tab, max):
             tab[i]=max
     return tab
 
-
-def findTarget(tab1, tab2, errorMarge):
-    differenceTab = findTabsDifference(tab1, tab2, errorMarge)
-    print(differenceTab)
-    currentStreak = []
-    bestStreak = []
-    streakCounter = 0
-    bestStreakCounter = -1
-    streakErrorMarge = errorMarge + 5
-    for diff in differenceTab:
-        if ((diff[1] - diff[
-            2]) > 0):  # On verifie que la distance est négative pour s'assurer qu'il s'agit d'un objet plus proche que le premier scan
-            # pour bien detecter la nouvel position de la cible
-            # On verifie si les valeur sont proche du relevé précédent pour évaluer si il s'agit du même objet
-            if (currentStreak != [] and (
-                    # (diff[1] >= (currentStreak[-1][1] - streakErrorMarge)) and (
-                    # diff[1] <= (currentStreak[-1][1] + streakErrorMarge))) and
-                    (diff[2] >= (currentStreak[-1][2] - streakErrorMarge)) and (
-                    diff[2] <= (currentStreak[-1][1] + streakErrorMarge)))):
-                # Si c'est le cas on ajoute 1 au compteur d'angle reprsentant cet objet
-                streakCounter += 1
-                # et on ajoute cet angle à la liste des angles le réprésentant
-                currentStreak.append(diff)
-            # Sinon on créé une nouvelle streak
-            else:
-                currentStreak.clear()
-                currentStreak.append(diff)
-                # On sauvegarde avant l'ancienne streak si la nouvelle est plus grand
-                if streakCounter > bestStreakCounter:
-                    bestStreakCounter = streakCounter
-                    bestStreak = currentStreak.copy()
-                streakCounter = 1
-            print(currentStreak)
-        else:  # Si la différence est positive on arrête la streak et on regarde si elle est mieux
-            if ((streakCounter > bestStreakCounter) and (streakCounter > 0)):
-                print(bestStreak)
-                bestStreakCounter = streakCounter
-                bestStreak = currentStreak.copy()
-            currentStreak.clear()
-            streakCounter = 0
-    # On verifie si la dernière streak est mieux que celle précédement trouvé
-    if streakCounter > bestStreakCounter:
-        bestStreakCounter = streakCounter
-        bestStreak = currentStreak.copy()
-    # print(bestStreak)
-    print(bestStreakCounter)
-    if (len(bestStreak) > 0):
-        return bestStreak[
-            int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
-    else:
-        return bestStreak
+#renvoie le truple (?) où se ttouve la différence
+def findTarget(tab1,tab2, errorMarge):
+        differenceTab = findTabsDifference(tab1, tab2, errorMarge)
+        if(len(differenceTab) != 0):
+            for diff in differenceTab :
+                if((diff[1]-diff[2])>0):
+                    return diff
+        return (-1, 0, 0)
 
 #Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -166,7 +123,12 @@ def findTabsDifference(tab1, tab2, errorMarge):
             min = tab2[i]-errorMarge
         if((tab1[i]<min)or(tab1[i]>max)):
             differenceTab.append((i,tab1[i],tab2[i]))
-    return differenceTab
+    #traitement des différences pour ne garder que celles où 2 pts consécutifs sont significatifs
+    differenceCorrected = []
+    for j in range(0, len(differenceTab)-1):
+        if(differenceTab[j][0] == differenceTab[j+1][0] - 1):
+            differenceCorrected.append(differenceTab[j]) #on renvoie la premiere case lorsqu'il y a 2 pts, donc utiliser +10° lors du choix de l'angle
+    return differenceCorrected
 
 
 def main(noisy = True):
@@ -180,50 +142,59 @@ def main(noisy = True):
     #Valeur du pas (en degrés)
     step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
     nbPas = 36
+    writeInFiles = False #controle si on dump les tableaux dans un txt
 
     #Séquence au démarrage
     print_display(display,  'CALIBRATION')
     tank.gyro.calibrate()
     time.sleep(1)
     tabloDistance = []
-    print_display(display,  'Début scan')
+    print_display(display,  "Début de l'exécution")
     time.sleep(2)
 
-    tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
-    tabloDistance = trimTab(tabloDistance,155)
+    compteurExecutions = 0
 
-    #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
-    f=  open("/home/robot/distanceData1.txt", "w")
-    for i in range(nbPas):
-        f.write(str(tabloDistance[i]))
-        f.write('\n')  
-    f.close()
+    while(True):
+        compteurExecutions = compteurExecutions+1
+        print_display(display,  'Execution ' + str(compteurExecutions))
 
-    tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
-    tabloDistance2 = trimTab(tabloDistance2,155)
+        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance = trimTab(tabloDistance,155)
 
-    #boucle scan 2
+        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance2 = trimTab(tabloDistance2,155)
 
-    #On dump le tableau des distances dans un txt pour pouvoir les rapatrier sur un pc
-    f=  open("/home/robot/distanceData2.txt", "w")
-    for i in range(nbPas):
-        f.write(str(tabloDistance2[i]))
-        f.write('\n')
-    f.close()
+        tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
+        target = findTarget(tabloDistance,tabloDistance2, 10)
+        angleCible = 10 * target[0] +10
+
+        moveTowardAngle(angleCible, target[1], tank.gyro, steer_motors, display)
 
 
-    tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
-    f=  open("/home/robot/tableauDiff.txt", "w")
-    angleCible = 10 * findTarget(tabloDistance,tabloDistance2, 10)
-    f.write("angle: " + str(angleCible))
-    f.write('\n')
-    for i in range(len(tabdiff)):
-        f.write(str("I: " + str(tabdiff[i][0])))
-        f.write(str(" T1 : " + str(tabdiff[i][1])))
-        f.write(str(" T2 :" + str(tabdiff[i][2])))
 
-        f.write('\n')
-    f.close()
+        if(writeInFiles):
+            f=  open("/home/robot/distanceData1.txt", "w")
+            for i in range(nbPas):
+                f.write(str(tabloDistance[i]))
+                f.write('\n')  
+            f.close()
+
+            f=  open("/home/robot/distanceData2.txt", "w")
+            for i in range(nbPas):
+                f.write(str(tabloDistance2[i]))
+                f.write('\n')
+            f.close()
+
+            f=  open("/home/robot/tableauDiff.txt", "w")
+            f.write("angle: " + str(angleCible))
+            f.write('\n')
+            for i in range(len(tabdiff)):
+                f.write(str("I: " + str(tabdiff[i][0])))
+                f.write(str(" T1 : " + str(tabdiff[i][1])))
+                f.write(str(" T2 :" + str(tabdiff[i][2])))
+
+                f.write('\n')
+            f.close()
 
     
     
