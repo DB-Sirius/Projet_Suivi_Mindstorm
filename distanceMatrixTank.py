@@ -187,7 +187,7 @@ def main(noisy = True):
     #Valeur du pas (en degrés)
     step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
     nbPas = 36
-    writeInFiles = False #controle si on dump les tableaux dans un txt
+    writeInFiles = True #controle si on dump les tableaux dans un txt
 
     #Séquence au démarrage
     print_display(display,  'CALIBRATION')
@@ -206,6 +206,8 @@ def main(noisy = True):
         tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance = trimTab(tabloDistance,155)
 
+        time.sleep(0.5)
+
         tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance2 = trimTab(tabloDistance2,155)
 
@@ -213,8 +215,8 @@ def main(noisy = True):
         target = findTarget(tabloDistance,tabloDistance2, 10)
         angleCible = 10 * target[0]
 
-        moveTowardAngle(angleCible, target[1], tank.gyro, steer_motors, display)
-
+        time.sleep(0.5)
+        moveTowardAngle(angleCible, target[2], tank.gyro, steer_motors, display)
 
 
         if(writeInFiles):
@@ -239,12 +241,13 @@ def main(noisy = True):
                 f.write(str(" T2 :" + str(tabdiff[i][2])))
 
                 f.write('\n')
+            f.write('anglecible : '+str(angleCible))
             f.close()
+        
+        time.sleep(2)
 
     
     
-
-    print_display(display, "angle cible: " + str(angleCible))
     time.sleep(7)
 
 
