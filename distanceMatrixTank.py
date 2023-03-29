@@ -61,9 +61,19 @@ def moveTowardAngle(angle, distance, gyro, steer_motors, display):
     #on s'oriente vers l'angle recherché, si possible multiple de 10°
     while(angle > 360):
         angle = angle - 360
+    while(angle < 0):
+        angle = angle + 360
     rotateAngle(angle,gyro,steer_motors,display)
     #On avance
     moveDistance(distance,steer_motors,display)
+    return
+
+def correctAngle(angleCible, gyro, steer_motors, display):
+    #get valeur gyro
+    values_gyro = gyro.angle_and_rate
+    correction = values_gyro[0] - angleCible
+    print_display(display,  "correction angle : " + str(correction))
+    rotateAngle(correction,gyro,steer_motors,display)
     return
 
 def findTabsDifference(tab1, tab2, errorMarge):
@@ -203,10 +213,14 @@ def main(noisy = True):
         compteurExecutions = compteurExecutions+1
         print_display(display,  'Execution ' + str(compteurExecutions))
 
+        values_gyro = gyro.angle_and_rate
+        angleControle = values_gyro[0] #on prend l'angle de controle pour le corriger plus tard
+
         tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
+        correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
 
         tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance2 = trimTab(tabloDistance2,155)
