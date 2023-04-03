@@ -257,11 +257,16 @@ def main(noisy = True):
         tabloDistance2 = trimTab(tabloDistance2,155)
 
         tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
-        target = findTarget(tabloDistance,tabloDistance2, 10)
-        angleCible = 10 * target[0]
 
-        time.sleep(0.5)
-        moveTowardAngle(angleCible, target[2], tank.gyro, steer_motors, display)
+        #si on ne trouve pas de différence signicative, on avance au pif
+        if(len(tabdiff) == 0):
+            deplacementAleatoire(4, us_sensor,steer_motors,display)
+        else:
+            target = findTarget(tabloDistance,tabloDistance2, 10)
+            angleCible = 10 * target[0]
+
+            time.sleep(0.5)
+            moveTowardAngle(angleCible, target[2], tank.gyro, steer_motors, display)
 
 
         if(writeInFiles):
