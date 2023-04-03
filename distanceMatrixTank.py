@@ -97,12 +97,12 @@ def findTabsDifference(tab1, tab2, errorMarge):
             differenceTab.append((i,tab1[i],tab2[i]))
     return differenceTab
 
-def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
+def scanEnvironnement(nbPas,us_sensor,steer_motors,display, gyro) :
     tabloDistance = []
     rotationDuration = (0.277/36)*nbPas
     for i in range(nbPas):
         dist = us_sensor.distance_centimeters
-        print_display(display," Distance: " + str(dist) )
+        print_display(display," Gyro: " + str(gyro.angle_and_rate[0]) )
         tabloDistance.append(dist)
         #tabloDistanceGyro.append(gyroValues[0],dist)
         steer_motors.on_for_seconds(100,20,rotationDuration)
@@ -116,13 +116,13 @@ def trimTab(tab, max):
             tab[i]=max
     return tab
 
-#ne mettre que des temps >2 sec
+#ne mettre que des temps >1 sec
 def deplacementAleatoire(temps, us_sensor,steer_motors,display):
     interval = temps
     while(interval >0):
         rienDevant = (us_sensor.distance_centimeters > 20)
         while(rienDevant and interval >0):
-            steer_motors.on_for_seconds(0,20,2)
+            steer_motors.on_for_seconds(0,20,1)
             interval = interval - 2
             rienDevant = (us_sensor.distance_centimeters > 20)
         while(not rienDevant and interval >0):
@@ -240,13 +240,13 @@ def main(noisy = True):
         values_gyro = tank.gyro.angle_and_rate
         angleControle = values_gyro[0] #on prend l'angle de controle pour le corriger plus tard
 
-        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display, tank.gyro)
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
         correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
 
-        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display, tank.gyro)
         tabloDistance2 = trimTab(tabloDistance2,155)
 
         tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
