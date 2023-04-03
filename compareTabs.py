@@ -14,7 +14,7 @@ def findTabsDifference(tab1, tab2, errorMarge):
 
 #Fonction ayant pour but de trouvé un suite d'angle ayant une différence négative entre le premier et le deuxième scan
 #pour trouver la position de la cible
-def findTarget(tab1, tab2, errorMarge):
+def findTarget(tab1, tab2, errorMarge, closestValue = False):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
     currentStreak = []
@@ -60,27 +60,25 @@ def findTarget(tab1, tab2, errorMarge):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        return bestStreak[
-            int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+        if(closestValue):
+            closest = bestStreak[0]
+            for diff in bestStreak:
+                if diff[2]<closest[2] :
+                    closest=diff.copy()
+            return closest
+        else :
+            return bestStreak[
+                int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
 
 
 def main():
-    tab1 = [100, 100, 100, 100, 100, 50, 100, 100, 100, 200, 200, 200]
-    tab2 = [100, 100, 100, 40, 50, 100, 50 , 55 , 45 , 50 , 50 , 50]
-
-    print("zzzzzzzzzzz")
-
-    tab4 = [100, 100, 100, 100, 100, 50, 100, 100, 100, 200, 200, 200]
-
-    tab5 = [100, 100, 100, 100, 100, 50, 100, 100, 100, 200, 200, 200]
-
-    tab6 = [100, 100, 100, 100, 40, 50, 100, 100, 100, 200, 200, 200]
+    tab1 = [50, 50, 50, 50, 100, 100, 100, 34.0, 34.0, 33.4, 100, 100, 124.61, 48.804, 45.2, 46.0, 51.0, 81.0, 155, 155]
+    tab2 = [50, 50, 50, 50, 100, 100, 100, 155, 155, 126.9, 100 , 100, 46.0 , 32.6 , 17.402, 18.5, 20.5, 19.703, 32.6, 155]
 
 
-    tab3 = []
-    target = findTarget(tab1,tab4,10)
+    target = findTarget(tab1,tab2,10, True)
     print(target)
 
 
