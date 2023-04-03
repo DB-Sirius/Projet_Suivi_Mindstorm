@@ -46,6 +46,7 @@ def moveDistance(distance,steer_motors,display):
     moveDuration = distance/7.5
     steer_motors.on_for_seconds(0,-20,moveDuration)
 
+
 #Fait tourner le robot d'une valeur donnée en degré
 #prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
 def rotateAngle(angle,gyro,steer_motors,display):
@@ -182,7 +183,7 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
             closest = bestStreak[0]
             for diff in bestStreak:
                 if diff[2]<closest[2] :
-                    closest=diff.copy()
+                    closest=diff
             return closest
         else :
             if(((bestStreakCounter-1)%2)!=0):
@@ -209,12 +210,13 @@ def findTabsDifference(tab1, tab2, errorMarge):
             min = tab2[i]-errorMarge
         if((tab1[i]<min)or(tab1[i]>max)):
             differenceTab.append((i,tab1[i],tab2[i]))
+    return differenceTab
     #traitement des différences pour ne garder que celles où 2 pts consécutifs sont significatifs
-    differenceCorrected = []
-    for j in range(0, len(differenceTab)-1):
-        if(differenceTab[j][0] == differenceTab[j+1][0] - 1):
-            differenceCorrected.append(differenceTab[j]) #on renvoie la premiere case lorsqu'il y a 2 pts, donc utiliser +10° lors du choix de l'angle
-    return differenceCorrected
+    #differenceCorrected = []
+    #for j in range(0, len(differenceTab)-1):
+    #    if(differenceTab[j][0] == differenceTab[j+1][0] - 1):
+    #        differenceCorrected.append(differenceTab[j]) #on renvoie la premiere case lorsqu'il y a 2 pts, donc utiliser +10° lors du choix de l'angle
+    #return differenceCorrected
 
 
 def main(noisy = True):
@@ -239,7 +241,6 @@ def main(noisy = True):
     time.sleep(2)
 
     compteurExecutions = 0
-
     while(True):
         compteurExecutions = compteurExecutions+1
         print_display(display,  'Execution ' + str(compteurExecutions))
@@ -251,7 +252,7 @@ def main(noisy = True):
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
-        correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
+        #correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
 
         tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display, tank.gyro)
         tabloDistance2 = trimTab(tabloDistance2,155)
