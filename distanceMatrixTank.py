@@ -39,13 +39,10 @@ def tournerDroite(angle, gyro, steer_motors):
         steer_motors.off()
         values_gyro_actual = gyro.angle_and_rate
 
-    #TODO : mettre un mécanisme de correction (retour en arriere) si on dépasse l'angle d'un certain seuil (genre 4-5°)
-
 #Fait avancer le robot d'une distance donné en cm
 def moveDistance(distance,steer_motors,display):
     moveDuration = distance/7.5
     steer_motors.on_for_seconds(0,-20,moveDuration)
-
 
 #Fait tourner le robot d'une valeur donnée en degré
 #prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
@@ -98,12 +95,12 @@ def findTabsDifference(tab1, tab2, errorMarge):
             differenceTab.append((i,tab1[i],tab2[i]))
     return differenceTab
 
-def scanEnvironnement(nbPas,us_sensor,steer_motors,display, gyro) :
+def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
     tabloDistance = []
     rotationDuration = (0.277/36)*nbPas
     for i in range(nbPas):
         dist = us_sensor.distance_centimeters
-        print_display(display," Gyro: " + str(gyro.angle_and_rate[0]) )
+        print_display(display," Distance: " + str(dist) )
         tabloDistance.append(dist)
         #tabloDistanceGyro.append(gyroValues[0],dist)
         steer_motors.on_for_seconds(100,20,rotationDuration)
@@ -117,23 +114,8 @@ def trimTab(tab, max):
             tab[i]=max
     return tab
 
-#ne mettre que des temps >1 sec
-def deplacementAleatoire(temps, us_sensor,steer_motors,display):
-    interval = temps
-    while(interval >0):
-        rienDevant = (us_sensor.distance_centimeters > 20)
-        while(rienDevant and interval >0):
-            steer_motors.on_for_seconds(0,20,1)
-            interval = interval - 2
-            rienDevant = (us_sensor.distance_centimeters > 20)
-        while(not rienDevant and interval >0):
-            steer_motors.on_for_seconds(-100,10,1)
-            interval = interval - 1
-            rienDevant = (us_sensor.distance_centimeters > 20)
-    return
 
-
-def findTarget(tab1, tab2, errorMarge, closestValue = False):
+def findTarget(tab1, tab2, errorMarge):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
     currentStreak = []
@@ -179,21 +161,14 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        if(closestValue) :
-            closest = bestStreak[0]
-            for diff in bestStreak:
-                if diff[2]<closest[2] :
-                    closest=diff
-            return closest
+        if(((bestStreakCounter-1)%2)!=0):
+            bestStreakCounter2=int((bestStreakCounter-1) / 2)
+            rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
+            rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
+            rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
+            return rAngleAndDist
         else :
-            if(((bestStreakCounter-1)%2)!=0):
-                bestStreakCounter2=int((bestStreakCounter-1) / 2)
-                rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
-                rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
-                rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
-                return rAngleAndDist
-            else :
-                return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+            return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
     
@@ -210,13 +185,12 @@ def findTabsDifference(tab1, tab2, errorMarge):
             min = tab2[i]-errorMarge
         if((tab1[i]<min)or(tab1[i]>max)):
             differenceTab.append((i,tab1[i],tab2[i]))
-    return differenceTab
     #traitement des différences pour ne garder que celles où 2 pts consécutifs sont significatifs
-    #differenceCorrected = []
-    #for j in range(0, len(differenceTab)-1):
-    #    if(differenceTab[j][0] == differenceTab[j+1][0] - 1):
-    #        differenceCorrected.append(differenceTab[j]) #on renvoie la premiere case lorsqu'il y a 2 pts, donc utiliser +10° lors du choix de l'angle
-    #return differenceCorrected
+    differenceCorrected = []
+    for j in range(0, len(differenceTab)-1):
+        if(differenceTab[j][0] == differenceTab[j+1][0] - 1):
+            differenceCorrected.append(differenceTab[j]) #on renvoie la premiere case lorsqu'il y a 2 pts, donc utiliser +10° lors du choix de l'angle
+    return differenceCorrected
 
 
 def main(noisy = True):
@@ -241,6 +215,7 @@ def main(noisy = True):
     time.sleep(2)
 
     compteurExecutions = 0
+
     while(True):
         compteurExecutions = compteurExecutions+1
         print_display(display,  'Execution ' + str(compteurExecutions))
@@ -248,26 +223,21 @@ def main(noisy = True):
         values_gyro = tank.gyro.angle_and_rate
         angleControle = values_gyro[0] #on prend l'angle de controle pour le corriger plus tard
 
-        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display, tank.gyro)
+        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
         #correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
 
-        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display, tank.gyro)
+        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance2 = trimTab(tabloDistance2,155)
 
         tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
+        target = findTarget(tabloDistance,tabloDistance2, 10)
+        angleCible = 10 * target[0]
 
-        #si on ne trouve pas de différence signicative, on avance au pif
-        if(len(tabdiff) == 0):
-            deplacementAleatoire(4, us_sensor,steer_motors,display)
-        else:
-            target = findTarget(tabloDistance,tabloDistance2, 10)
-            angleCible = 10 * target[0]
-
-            time.sleep(0.5)
-            moveTowardAngle(angleCible, target[2], tank.gyro, steer_motors, display)
+        time.sleep(0.5)
+        moveTowardAngle(angleCible, target[2]-5, tank.gyro, steer_motors, display)
 
 
         if(writeInFiles):
