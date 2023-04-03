@@ -132,7 +132,7 @@ def deplacementAleatoire(temps, us_sensor,steer_motors,display):
     return
 
 
-def findTarget(tab1, tab2, errorMarge):
+def findTarget(tab1, tab2, errorMarge, closestValue = False):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
     currentStreak = []
@@ -178,14 +178,21 @@ def findTarget(tab1, tab2, errorMarge):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        if(((bestStreakCounter-1)%2)!=0):
-            bestStreakCounter2=int((bestStreakCounter-1) / 2)
-            rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
-            rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
-            rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
-            return rAngleAndDist
+        if(closestValue) :
+            closest = bestStreak[0]
+            for diff in bestStreak:
+                if diff[2]<closest[2] :
+                    closest=diff.copy()
+            return closest
         else :
-            return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+            if(((bestStreakCounter-1)%2)!=0):
+                bestStreakCounter2=int((bestStreakCounter-1) / 2)
+                rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
+                rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
+                rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
+                return rAngleAndDist
+            else :
+                return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
     
