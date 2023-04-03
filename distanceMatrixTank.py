@@ -49,6 +49,10 @@ def moveDistance(distance,steer_motors,display):
 #Fait tourner le robot d'une valeur donnée en degré
 #prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
 def rotateAngle(angle,gyro,steer_motors,display):
+    while(angle > 360):
+        angle = angle - 360
+    while(angle < 0):
+        angle = angle + 360
     if(angle <= 180):
         rotationDuration = ((0.278 * 36)/360)*angle
         steer_motors.on_for_seconds(100, 20, rotationDuration)
@@ -112,9 +116,22 @@ def trimTab(tab, max):
             tab[i]=max
     return tab
 
+#ne mettre que des temps >2 sec
+def deplacementAleatoire(temps, us_sensor,steer_motors,display):
+    interval = temps
+    while(interval >0):
+        rienDevant = (us_sensor.distance_centimeters > 20)
+        while(rienDevant and interval >0):
+            steer_motors.on_for_seconds(0,20,2)
+            interval = interval - 2
+            rienDevant = (us_sensor.distance_centimeters > 20)
+        while(not rienDevant and interval >0):
+            steer_motors.on_for_seconds(-100,10,1)
+            interval = interval - 1
+            rienDevant = (us_sensor.distance_centimeters > 20)
+    return
 
-#Fonction ayant pour but de trouvé un suite d'angle ayant une différence négative entre le premier et le deuxième scan
-#pour trouver la position de la cible
+
 def findTarget(tab1, tab2, errorMarge):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
@@ -161,11 +178,18 @@ def findTarget(tab1, tab2, errorMarge):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        return bestStreak[
-            int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+        if(((bestStreakCounter-1)%2)!=0):
+            bestStreakCounter2=int((bestStreakCounter-1) / 2)
+            rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
+            rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
+            rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
+            return rAngleAndDist
+        else :
+            return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
-
+    
+ 
 #Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
 def findTabsDifference(tab1, tab2, errorMarge):
     differenceTab = []
@@ -213,7 +237,7 @@ def main(noisy = True):
         compteurExecutions = compteurExecutions+1
         print_display(display,  'Execution ' + str(compteurExecutions))
 
-        values_gyro = gyro.angle_and_rate
+        values_gyro = tank.gyro.angle_and_rate
         angleControle = values_gyro[0] #on prend l'angle de controle pour le corriger plus tard
 
         tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
