@@ -11,41 +11,26 @@ from ev3dev2.motor   import OUTPUT_A, OUTPUT_D
 from ev3dev2.sensor.lego import UltrasonicSensor, ColorSensor
 from ev3dev2.sensor.lego import GyroSensor, TouchSensor
 from ev3dev2.motor import OUTPUT_B, MoveTank, SpeedPercent, follow_for_ms
-from PIL             import Image  # Je sais pas ce que ca fait mais laissons le
+from PIL             import Image
 
 
-DistPerRevolution = 1 #Distance parcouru en cm pour une rotation des roues
-                      #TODO : Mesurer cette valeur
+# Efface l'écran
 def clear_display(display):
     display.clear()
     display.update()
 
+# écrit text sur l'écran
 def print_display(display, text):
-    # using display.text_grid(text, ...) instead of print(test)
-    display.text_grid(text, True, 0, 10) # clear screen, 11th row / 22
+    display.text_grid(text, True, 0, 10)
     display.update()
 
-#fonction qui fait tourner le robot par pas vers la droite de l'angle indiqué
-def tournerDroite(angle, gyro, steer_motors):
-    values_gyro_init = gyro.angle_and_rate
-    values_gyro_actual = gyro.angle_and_rate
-    while(values_gyro_actual[0] < values_gyro_init[0] + angle): #tant qu'on est pas à l'angle de décalage demandé
-        #si on a plus de 5 degrés avant d'arriver à l'angle cible, on va vite
-        if(values_gyro_init[0] + angle -values_gyro_actual[0] > 5):
-            steer_motors.on(-100, 5)    
-        else: #sinon, on va lentement pour ne pas dépasser l'angle de peu
-            steer_motors.on(-100, 1)
-        time.sleep(0.5)
-        steer_motors.off()
-        values_gyro_actual = gyro.angle_and_rate
-
-#Fait avancer le robot d'une distance donné en cm
+# Fait avancer le robot d'une distance donnée en cm vers l'avant
 def moveDistance(distance,steer_motors,display):
     moveDuration = distance/7.5
     steer_motors.on_for_seconds(0,-20,moveDuration)
 
-#Fait tourner le robot d'une valeur donnée en degré
-#prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
+# Fait tourner le robot d'une valeur donnée en degré dans le sens trigonométrique
+# Prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
 def rotateAngle(angle,gyro,steer_motors,display):
     while(angle > 360):
         angle = angle - 360
@@ -58,7 +43,7 @@ def rotateAngle(angle,gyro,steer_motors,display):
         rotationDuration = ((0.278 * 36)/360)*(360 - angle)
         steer_motors.on_for_seconds(-100, 20, rotationDuration)
 
-#Fait avancer le robot en direction d'un angle sur une distance donné
+# Fait avancer le robot en direction d'un angle sur une distance donnée
 def moveTowardAngle(angle, distance, gyro, steer_motors, display):
     #on s'oriente vers l'angle recherché, si possible multiple de 10°
     while(angle > 360):
@@ -66,35 +51,21 @@ def moveTowardAngle(angle, distance, gyro, steer_motors, display):
     while(angle < 0):
         angle = angle + 360
     rotateAngle(angle,gyro,steer_motors,display)
-    #On avance
     moveDistance(distance,steer_motors,display)
     return
 
+# Fonction de correction de l'angle pour une rotation plus précise
+# Non utilisé dans la version finale, le gyro pose plus de problèmes qu'il n'en corrige
 def correctAngle(angleCible, gyro, steer_motors, display):
-    #get valeur gyro
     values_gyro = gyro.angle_and_rate
     correction = values_gyro[0] - angleCible
     print_display(display,  "correction angle : " + str(correction))
     rotateAngle(correction,gyro,steer_motors,display)
     return
 
-def findTabsDifference(tab1, tab2, errorMarge):
-    differenceTab = []
-    for i in range(0,len(tab1)) :
-        if(errorMarge<1): #Si la valeur fournit est inférieur à 1, on utilise un système de pourcent
-            max = tab2[i]*(1+(errorMarge*0.01))
-            min = tab2[i]*(1-(errorMarge*0.01))
-        else :
-            max = tab2[i]+errorMarge
-            min = tab2[i]-errorMarge
-        print("Max : " + str(max))
-        print("Min : " + str(min))
-        print("Value : " + str(tab1[i]))
-        if((tab1[i]<min)or(tab1[i]>max)):
-            print("Found difference at " + str(i) + "th cell, value1 : " + str(tab1[i]) + " different from value2 : " + str(tab2[i]))
-            differenceTab.append((i,tab1[i],tab2[i]))
-    return differenceTab
 
+# Fonction qui fait tourner le robot à 360° et mesure les distances aux obstacles
+# nbPas : nombre de pas à faire par tour
 def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
     tabloDistance = []
     rotationDuration = (0.277/36)*nbPas
@@ -108,6 +79,7 @@ def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
 
     return tabloDistance
 
+# Tronque les valeurs > max du tableau
 def trimTab(tab, max):
     for i in range(0, len(tab)) :
         if tab[i]>max :
@@ -115,7 +87,7 @@ def trimTab(tab, max):
     return tab
 
 
-def findTarget(tab1, tab2, errorMarge):
+def findTarget(tab1, tab2, errorMarge, closestValue = False):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
     currentStreak = []
@@ -129,8 +101,6 @@ def findTarget(tab1, tab2, errorMarge):
             # pour bien detecter la nouvel position de la cible
             # On verifie si les valeur sont proche du relevé précédent pour évaluer si il s'agit du même objet
             if (currentStreak != [] and (
-                    # (diff[1] >= (currentStreak[-1][1] - streakErrorMarge)) and (
-                    # diff[1] <= (currentStreak[-1][1] + streakErrorMarge))) and
                     (diff[2] >= (currentStreak[-1][2] - streakErrorMarge)) and (
                     diff[2] <= (currentStreak[-1][1] + streakErrorMarge)))):
                 # Si c'est le cas on ajoute 1 au compteur d'angle reprsentant cet objet
@@ -139,13 +109,13 @@ def findTarget(tab1, tab2, errorMarge):
                 currentStreak.append(diff)
             # Sinon on créé une nouvelle streak
             else:
-                currentStreak.clear()
-                currentStreak.append(diff)
                 # On sauvegarde avant l'ancienne streak si la nouvelle est plus grand
                 if streakCounter > bestStreakCounter:
                     bestStreakCounter = streakCounter
                     bestStreak = currentStreak.copy()
                 streakCounter = 1
+                currentStreak.clear()
+                currentStreak.append(diff)
             print(currentStreak)
         else:  # Si la différence est positive on arrête la streak et on regarde si elle est mieux
             if ((streakCounter > bestStreakCounter) and (streakCounter > 0)):
@@ -161,19 +131,15 @@ def findTarget(tab1, tab2, errorMarge):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        if(((bestStreakCounter-1)%2)!=0):
-            bestStreakCounter2=int((bestStreakCounter-1) / 2)
-            rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
-            rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
-            rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
-            return rAngleAndDist
-        else :
-            return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+        return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
-    
- 
-#Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
+
+
+# Fonction pour trouver la plus grande différence dans deux tableaux de distance
+# Utilisée pour détecter le changement de position de la cible, en s'appuyant exclusivement sur les données de scan
+# Marge d'erreur en cm
+# Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
 def findTabsDifference(tab1, tab2, errorMarge):
     differenceTab = []
     for i in range(0,len(tab1)) :
@@ -201,8 +167,6 @@ def main(noisy = True):
     tank.gyro = GyroSensor()
     os.system('setfont Lat15-TerminusBold14')
     
-    #Valeur du pas (en degrés)
-    step = 10 #N'UTILISER QUE DES DIVISEURS DE 360!!!!
     nbPas = 36
     writeInFiles = True #controle si on dump les tableaux dans un txt
 
@@ -227,7 +191,7 @@ def main(noisy = True):
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
-        #correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle
+        #correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle en théorie, mais foirée
 
         tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
         tabloDistance2 = trimTab(tabloDistance2,155)
@@ -240,19 +204,23 @@ def main(noisy = True):
         moveTowardAngle(angleCible, target[2]-5, tank.gyro, steer_motors, display)
 
 
+        # Ecriture éventuelle des fichiers pour le débug
         if(writeInFiles):
+            # Premier scan
             f=  open("/home/robot/distanceData1.txt", "w")
             for i in range(nbPas):
                 f.write(str(tabloDistance[i]))
                 f.write('\n')  
             f.close()
 
+            #Second scan
             f=  open("/home/robot/distanceData2.txt", "w")
             for i in range(nbPas):
                 f.write(str(tabloDistance2[i]))
                 f.write('\n')
             f.close()
 
+            # Tableau des différences et infos complémentaires
             f=  open("/home/robot/tableauDiff.txt", "w")
             f.write("angle: " + str(angleCible))
             f.write('\n')

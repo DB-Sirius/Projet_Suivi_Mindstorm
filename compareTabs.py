@@ -38,13 +38,13 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
                 currentStreak.append(diff)
             # Sinon on créé une nouvelle streak
             else:
-                currentStreak.clear()
-                currentStreak.append(diff)
                 # On sauvegarde avant l'ancienne streak si la nouvelle est plus grand
                 if streakCounter > bestStreakCounter:
                     bestStreakCounter = streakCounter
                     bestStreak = currentStreak.copy()
                 streakCounter = 1
+                currentStreak.clear()
+                currentStreak.append(diff)
             print(currentStreak)
         else:  # Si la différence est positive on arrête la streak et on regarde si elle est mieux
             if ((streakCounter > bestStreakCounter) and (streakCounter > 0)):
@@ -60,29 +60,15 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
     # print(bestStreak)
     print(bestStreakCounter)
     if (len(bestStreak) > 0):
-        if(closestValue) :
-            closest = bestStreak[0]
-            for diff in bestStreak:
-                if diff[2]<closest[2] :
-                    closest=diff
-            return closest
-        else :
-            if(((bestStreakCounter-1)%2)!=0):
-                bestStreakCounter2=int((bestStreakCounter-1) / 2)
-                rDist1 = (bestStreak[bestStreakCounter2][1] + bestStreak[bestStreakCounter2+1][1])/2
-                rDist2 = (bestStreak[bestStreakCounter2][2] + bestStreak[bestStreakCounter2+1][2])/2
-                rAngleAndDist = (bestStreak[0][0]+((bestStreakCounter-1)/2),rDist1,rDist2)
-                return rAngleAndDist
-            else :
-                return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
+        return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
 
 def main():
     tab1 = [50, 50, 50, 50, 100, 100, 100, 34.0, 34.0, 33.4, 100, 100, 124.61, 48.804, 45.2, 46.0, 51.0, 81.0, 155, 155]
-    tab2 = [50, 50, 50, 50, 100, 100, 100, 155, 155, 126.9, 100 , 100, 46.0 , 32.6 , 17.402, 18.5, 20.5, 19.703, 32.6, 155]
+    tab2 = [50, 12, 12, 50, 100, 150, 12, 12, 155, 126.9, 100 , 100, 46.0 , 32.6 , 45.7, 46.7, 51.7, 81.7, 155, 155]
 
-
+    print(findTabsDifference(tab1,tab2,10))
     target = findTarget(tab1,tab2,10, True)
     print(target)
 
