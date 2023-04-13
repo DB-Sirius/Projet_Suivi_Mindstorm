@@ -31,15 +31,15 @@ def moveDistance(distance,steer_motors,display):
 
 # Fait tourner le robot d'une valeur donnée en degré dans le sens trigonométrique
 # Prévu pour bouger 10° d'un coup ,sinon probablement pas terrible
-def rotateAngle(angle,gyro,steer_motors,display):
+def rotateAngle(angle,steer_motors):
     while(angle > 360):
         angle = angle - 360
     while(angle < 0):
         angle = angle + 360
-    if(angle <= 180):
+    if(angle <= 180): #Si l'angle est atteint plus rapidement en tournant dans le sens horaire on le fait
         rotationDuration = ((0.278 * 36)/360)*angle
         steer_motors.on_for_seconds(100, 20, rotationDuration)
-    else:
+    else: #Sinon on tourn dans le sens anti-horaire
         rotationDuration = ((0.278 * 36)/360)*(360 - angle)
         steer_motors.on_for_seconds(-100, 20, rotationDuration)
 
@@ -64,17 +64,17 @@ def correctAngle(angleCible, gyro, steer_motors, display):
     return
 
 
-# Fonction qui fait tourner le robot à 360° et mesure les distances aux obstacles
+# Fonction qui fait tourner le robot à 360° et mesure les distances des obstacles face à lui tous les nbPas
 # nbPas : nombre de pas à faire par tour
 def scanEnvironnement(nbPas,us_sensor,steer_motors,display) :
     tabloDistance = []
-    rotationDuration = (0.277/36)*nbPas
+    rotationDuration = (0.277/36)*nbPas #Calcul de la durée de rotation à une vitesse de 20 pour atteindre l'angle donné
+                                        #La valeur 0.277 à été approximé grâce à des tests
     for i in range(nbPas):
         dist = us_sensor.distance_centimeters
-        print_display(display," Distance: " + str(dist) )
+        print_display(display," Distance: " + str(dist) ) #Affichage des distance à chaque mesure pour débugger
         tabloDistance.append(dist)
-        #tabloDistanceGyro.append(gyroValues[0],dist)
-        steer_motors.on_for_seconds(100,20,rotationDuration)
+        steer_motors.on_for_seconds(100,20,rotationDuration) #Correspond à une rotation d'un pas, cad 10° dans notre projet
         time.sleep(0.24)
 
     return tabloDistance
@@ -86,7 +86,7 @@ def trimTab(tab, max):
             tab[i]=max
     return tab
 
-
+#Fonction renvoyant les cellules (Angle, Distance Angle Premier Scan, Distance Angle Deuxième Scan) des deux tableaux correspondant à la position de la cible
 def findTarget(tab1, tab2, errorMarge, closestValue = False):
     differenceTab = findTabsDifference(tab1, tab2, errorMarge)
     print(differenceTab)
@@ -96,14 +96,13 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
     bestStreakCounter = -1
     streakErrorMarge = errorMarge + 5
     for diff in differenceTab:
-        if ((diff[1] - diff[
-            2]) > 0):  # On verifie que la distance est négative pour s'assurer qu'il s'agit d'un objet plus proche que le premier scan
+        if ((diff[1] - diff[2]) > 0):  # On verifie que la distance est négative pour s'assurer qu'il s'agit d'un objet plus proche que le premier scan
             # pour bien detecter la nouvel position de la cible
             # On verifie si les valeur sont proche du relevé précédent pour évaluer si il s'agit du même objet
             if (currentStreak != [] and (
                     (diff[2] >= (currentStreak[-1][2] - streakErrorMarge)) and (
                     diff[2] <= (currentStreak[-1][1] + streakErrorMarge)))):
-                # Si c'est le cas on ajoute 1 au compteur d'angle reprsentant cet objet
+                # Si c'est le cas on ajoute 1 au compteur d'angle representant cet objet
                 streakCounter += 1
                 # et on ajoute cet angle à la liste des angles le réprésentant
                 currentStreak.append(diff)
@@ -128,15 +127,14 @@ def findTarget(tab1, tab2, errorMarge, closestValue = False):
     if streakCounter > bestStreakCounter:
         bestStreakCounter = streakCounter
         bestStreak = currentStreak.copy()
-    # print(bestStreak)
     print(bestStreakCounter)
-    if (len(bestStreak) > 0):
+    if (len(bestStreak) > 0): #On vérifie qu'on à bien trouvé un streak, évite le crash en cas d'erreur et de streak vide
         return bestStreak[int(bestStreakCounter / 2)]  # On renvoie l'angle au milieu des angle correspondant à la plus grand streak
     else:
         return bestStreak
 
 
-# Fonction pour trouver la plus grande différence dans deux tableaux de distance
+# Fonction renvoyant une liste de tuples de toutes les difference trouvé entre les deux scan
 # Utilisée pour détecter le changement de position de la cible, en s'appuyant exclusivement sur les données de scan
 # Marge d'erreur en cm
 # Renvoie un tableau de tuples avec (Index de la cellule où se trouve la différence,valeur du premier tableau, valeur du deuxième tableau)
@@ -166,8 +164,8 @@ def main(noisy = True):
     tank = MoveTank(OUTPUT_A,OUTPUT_D)
     tank.gyro = GyroSensor()
     os.system('setfont Lat15-TerminusBold14')
-    
-    nbPas = 36
+
+    nbPas = 36 #Nombre de fois que le robot fait un relevé lors des scan, ici un relevé tous les 10° de rotation
     writeInFiles = True #controle si on dump les tableaux dans un txt
 
     #Séquence au démarrage
@@ -181,30 +179,31 @@ def main(noisy = True):
     compteurExecutions = 0
 
     while(True):
-        compteurExecutions = compteurExecutions+1
+        compteurExecutions = compteurExecutions+1 #Compte le nombre de fois que le robot à effectué un cycle complet cad scan1 -> scan2 -> detection cible -> deplacement vers la cible
         print_display(display,  'Execution ' + str(compteurExecutions))
 
         values_gyro = tank.gyro.angle_and_rate
-        angleControle = values_gyro[0] #on prend l'angle de controle pour le corriger plus tard
 
-        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance = scanEnvironnement(nbPas,us_sensor,steer_motors,display) #Premier scan de l'environnement avant déplacement de la cible
         tabloDistance = trimTab(tabloDistance,155)
 
         time.sleep(0.5)
         #correctAngle(angleControle, tank.gyro, steer_motors, display) #correction de l'angle en théorie, mais foirée
 
-        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display)
+        tabloDistance2 = scanEnvironnement(nbPas,us_sensor,steer_motors,display) #Deuxieme scan de l'environnement après déplacement de la cible
         tabloDistance2 = trimTab(tabloDistance2,155)
 
-        tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10)
-        target = findTarget(tabloDistance,tabloDistance2, 10)
+        tabdiff = findTabsDifference(tabloDistance,tabloDistance2, 10) #Calcul des différence entre le premier et le deuxième scan
+        target = findTarget(tabloDistance,tabloDistance2, 10) #Calcul de l'angle correspondant à la cible càd plus grand nombre d'angle consécutif
+                                                            # avec une distscan1 - distscan2 positive
         angleCible = 10 * target[0]
 
         time.sleep(0.5)
-        moveTowardAngle(angleCible, target[2]-5, tank.gyro, steer_motors, display)
+        moveTowardAngle(angleCible, target[2]-5, tank.gyro, steer_motors, display) #Deplacement du robot en direction de la cible, sur une distance correspondant
+                                                                                    # à la distance de la cible lors du deuxième scan (target[2]-5)
 
 
-        # Ecriture éventuelle des fichiers pour le débug
+        # Ecriture de fichier sur le robot pour permettre le débuggage et qui peuvent être donné au distancereader pour donner un affichage visuel des scans
         if(writeInFiles):
             # Premier scan
             f=  open("/home/robot/distanceData1.txt", "w")
